@@ -11,7 +11,7 @@ allocation problems.
 
 This research is summarized in [this slideshow](https://docs.google.com/presentation/d/1GtdWFMxtsOxswUmNY0HNnKz7B1AO7px7Pbp4MSIUf90/edit#slide=id.g3eb76a4e6b_3_316).
 
-Videos of DeepNNCar in action can found found at https://www.youtube
+Videos of DeepNNCar in action can found found at
 https://www.youtube.com/playlist?list=PLZ5EcK0kbWDzE2Gf0CCzOMZXmmvqRiAgG
 ## About
 ![DeepNNCar](/Images/DeepNNCar.PNG)
