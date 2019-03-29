@@ -1,7 +1,7 @@
 #DataSetLoader.py
 #Authored: Matthew Burruss
 #Last Edited: 3/28/2019
-#Description: Preprocessing images for multiple Trials of data
+#Description: Provides functions for loading inputs and outputs from datasets contained in csv files
 
 import random
 import os

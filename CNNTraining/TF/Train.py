@@ -17,16 +17,16 @@ i=0
 full_data_training =  True
 batch_data_training = False
 batch_size = 500
-csvfile = open("trial1117r.csv", "w")
+csvfile = open("model.csv", "w")
 #######Parameters########
-save_path = "./trial1117r"
+save_path = "./model"
 model_name = "test"
 training_steps=200
 model_load_file="test.ckpt"
 #########################
 
 ##########Saving Directories##########
-save_dir = os.path.abspath('trial1117r')
+save_dir = os.path.abspath('model')
 ######################################
 
 
