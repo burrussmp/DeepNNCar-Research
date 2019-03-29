@@ -18,10 +18,12 @@ import sys
 import logging
 from queue import Queue
 from CommunicationProtocol import CommunicationProtocol
-from Peripherals import PWM,SpeedSensor,Camera
+from Peripherals import PWM,SpeedSensor,Camera,SystemMonitor
+from SafetyManager import SafetyManager
 from PluggableFeatures import PathTracker,PID
 import os
-#import model
+import tensorflow as tf
+
 class DeepNNCar:
     def __init__(self,port):
         context = zmq.Context()
@@ -37,7 +39,8 @@ class DeepNNCar:
         self.acceleration = 0
         self.terminateMainThread = False
         self.mutex = Lock()
-
+        self.temp = 0
+        self.cpuUsage = 0
     def configure(self):
         # obtain configurations
         configured = False
@@ -49,27 +52,45 @@ class DeepNNCar:
             if (type == "CONFIGURATION"): configured = True
         # get mode
         self.modeOfOperation = self.messageDecoder.getMode() # either AUTO,DATACOLLECT,LIVESTREAM, or NORMAL
+        modeFeatures = self.messageDecoder.getOperationModeFeatures()
         if (self.modeOfOperation == "AUTO"):
-            self.laneDetectionEnabled = self.messageDecoder.getOperationModeFeatures()
-            if (self.laneDetectionEnabled == "True"):
+            if (modeFeatures[0] == "True"):
                 self.laneDetectionEnabled = True
                 print("Lane detection enabled")
             else:
                 self.laneDetectionEnabled = False
                 print("Lane detection disabled")
+            if (modeFeatures[1] == "True"):
+                self.offloadingTasksEnabled = True
+                print("Offloading tasks enabled")
+            else:
+                self.offloadingTasksEnabled = False
+                print("Offloading tasks disabled")
+            if (modeFeatures[2] == "True"):
+                self.blurrinessMeasurementEnabled = True
+                print("Blurriness measurement enabled")
+            else:
+                self.blurrinessMeasurementEnabled = False
+                print("Blurriness measurement disabled")
         elif (self.modeOfOperation == "DATACOLLECTION"):
-            self.numberOfTrials = self.messageDecoder.getOperationModeFeatures()
+            count = self.numberOfTrials = 0
+            for i in modeFeatures:
+                self.numberOfTrials = self.numberOfTrials + int(i)*10**(len(modeFeatures)-1-count)
+                count = count + 1
+            print(self.numberOfTrials)
             self.numberOfTrials = int(self.numberOfTrials)
             print("Configured to collect %d trials" %self.numberOfTrials)
         # set booleans
-        self.temperatureTracker = self.messageDecoder.isTempTrackerEnabled()
-        if (self.temperatureTracker): print("Temperature tracking enabled")
+        self.temperatureTrackerEnabled = self.messageDecoder.isTempTrackerEnabled()
+        if (self.temperatureTrackerEnabled or self.offloadingTasksEnabled): print("Temperature tracking enabled")
         self.speedSensorEnabled = self.messageDecoder.isSpeedSensorEnabled()
         if (self.speedSensorEnabled): print("Speed sensor enabled")
         self.pathTrackerEnabled = self.messageDecoder.isPathTrackerEnabled()
         if (self.pathTrackerEnabled): print("Path tracking enabled")
         self.CPUTrackerEnabled = self.messageDecoder.isCPUTrackerEnabled()
         if (self.CPUTrackerEnabled): print("CPU tracking enabled")
+        # create system monitor
+        self.systemMonitor = SystemMonitor(2,self.CPUTrackerEnabled,(self.temperatureTrackerEnabled or self.offloadingTasksEnabled))
         # select acceleration protocol
         self.accelerationMode = self.messageDecoder.getAccelerationMode()
         features = self.messageDecoder.getAccelerationFeatures()
@@ -141,10 +162,13 @@ class DeepNNCar:
 
     def start(self):
         clientCommunicationThread = Thread(target = self.communicationThread)
+        updateDeepNNCarThread = Thread(target = self.updateDeepNNCar)
+        updateDeepNNCarThread.daemon = True
         # check to see what mode of operation
         if (self.modeOfOperation != "NORMAL"):
             if (self.modeOfOperation == "DATACOLLECTION"):
                 operationThread = Thread(target= self.collectData)
+                operationThread.daemon = True
                 operationThread.start()
             elif (self.modeOfOperation == "LIVESTREAM"):
                 operationThread = Thread(target= self.liveStream)
@@ -153,9 +177,13 @@ class DeepNNCar:
             elif (self.modeOfOperation == "AUTO"):
                 clientCommunicationThread = Thread(target = self.auto)
         clientCommunicationThread.start()
+        updateDeepNNCarThread.start()
 
     def auto(self):
-        """
+        print("importing model...")
+        import model
+        print("model imported....")
+        self.safetyManager = SafetyManager(self.laneDetectionEnabled,self.blurrinessMeasurementEnabled,self.offloadingTasksEnabled)
         sess = tf.InteractiveSession()
         saver = tf.train.Saver()
         model_name = 'test.ckpt'
@@ -164,7 +192,6 @@ class DeepNNCar:
         saver.restore(sess, model_path)
         while 1:
             ########################### Receive message
-            self.mutex.acquire()
             message = self.sock.recv()
             self.messageDecoder.decodeMessage(message.decode())
             acc,steer = self.messageDecoder.getControl()
@@ -172,9 +199,11 @@ class DeepNNCar:
                 acc = self.PID_Controller.getAcceleration()
             elif (self.accelerationMode == "CONSTANT"):
                 acc = self.acceleration
-            ########################### Make Predictions
+            ########################### Take image
             frame = self.camera.captureImage()
             frame_resized = cv2.resize(frame, (200, 66))
+            ########################## start safety manager thread
+            ldResult, bmResult = self.safetyManager.runImageAnalysis(frame_resized.copy(),self.temp)
             frame_normalized = frame_resized / 255.
             steer_normalized = model.y.eval(feed_dict={model.x: [frame_normalized]})[0][0]
             steer = steer_normalized*10+10 # range of 10-20
@@ -191,6 +220,10 @@ class DeepNNCar:
                 message += ";YCOORD=" + str(y)
                 message += ";DISPLACEMENT=" + str(displacement)
                 message += ";HEADING=" + str(heading)
+            if (self.CPUTrackerEnabled):
+                message += ";CPU=" + str(self.cpuUsage)
+            if (self.temperatureTrackerEnabled or self.offloadingTasksEnabled):
+                message += ";TEMP=" + str(self.temp)
             # send response
             if (self.speedSensorEnabled):
                 message += ";SPEED=" + str(self.DeepNNCarspeed)
@@ -198,14 +231,12 @@ class DeepNNCar:
             message += ";ACC=" + str(self.acceleration)
             message += ";STEER=" + str(self.steering)
             self.sock.send(message.encode())
-            self.mutex.release()
             if (self.messageDecoder.shouldStop()):
                 print("Stopping DeepNNCar")
                 self.pwm.changeDutyCycle(15,15)
                 self.terminateMainThread = True
                 return
-            deepNNCar.updateDeepNNCar()
-        """
+            #deepNNCar.updateDeepNNCar()
         print("Add later")
 
     def liveStream(self):
@@ -244,6 +275,10 @@ class DeepNNCar:
                 message += ";YCOORD=" + str(y)
                 message += ";DISPLACEMENT=" + str(displacement)
                 message += ";HEADING=" + str(heading)
+            if (self.CPUTrackerEnabled):
+                message += ";CPU=" + str(self.cpuUsage)
+            if (self.temperatureTrackerEnabled or self.offloadingTasksEnabled):
+                message += ";TEMP=" + str(self.temp)
             # send response
             if (self.speedSensorEnabled):
                 message += ";SPEED=" + str(self.DeepNNCarspeed)
@@ -257,7 +292,7 @@ class DeepNNCar:
                 self.pwm.changeDutyCycle(15,15)
                 self.terminateMainThread = True
                 return
-            deepNNCar.updateDeepNNCar()
+            #deepNNCar.updateDeepNNCar()
 
     def getDeepNNCarSpeed(self):
         return self.DeepNNCarspeed
@@ -270,18 +305,21 @@ class DeepNNCar:
         self.camera.release()
 
     def updateDeepNNCar(self):
-        if (self.speedSensorEnabled):
-            speed = self.speedSensor.getSpeed()
-            if (speed != -1): # if -1, this means the speed hasn't changed since last polled
-                self.DeepNNCarspeed = speed
-                if (self.accelerationMode == "CRUISE"):
-                    self.PID_Controller.update(speed,self.acceleration)
-            if (self.pathTrackerEnabled):
-                self.pathTracker.updateMe(speed,self.steering)
-        if (self.terminateMainThread):
-            exit(0)
+        while(1):
+            time.sleep(0.01)
+            if (self.speedSensorEnabled):
+                speed = self.speedSensor.getSpeed()
+                if (speed != -1): # if -1, this means the speed hasn't changed since last polled
+                    self.DeepNNCarspeed = speed
+                    if (self.accelerationMode == "CRUISE"):
+                        self.PID_Controller.update(speed,self.acceleration)
+                if (self.pathTrackerEnabled):
+                    self.pathTracker.updateMe(speed,self.steering)
+            self.temp,self.cpuUsage = self.systemMonitor.run()
+            if (self.terminateMainThread):
+                exit(0)
         
 if __name__=="__main__":
-    deepNNCar = DeepNNCar(port = "XXXX") # start DeepNNCar on port 5001
+    deepNNCar = DeepNNCar(port = "5001") # start DeepNNCar on port 5001
     deepNNCar.configure() # client communicates configurations
     deepNNCar.start() # begin threads based on configurations

@@ -52,6 +52,8 @@ class DeepNNCarController:
         self.heading = 0.0
         self.steeringAngle = 0
         self.accelerationDutyCycle = 15
+        self.temp = 0.0
+        self.cpuUtil = 0.0
         signal.signal(signal.SIGINT, self.signal_handler) # looks for control-c
     def start(self):
         # begin communication thread
@@ -101,7 +103,11 @@ class DeepNNCarController:
             message += ";CPUTRACKER=" + str(cpuUtilEnabled)
             message += ";ACCMODE=" + accMode
             message += ";MODE=" + operationMode
-            message += ";OPERATIONMODEFEATURES=" + str(operationModeFeatures)
+            message += ";NUMOPERATIONMODEFEATURE=" + str(len(operationModeFeatures))
+            i = 0
+            for feature in operationModeFeatures:
+                message += ";OPERATIONMODEFEATURE" + str(i) + "=" + str(feature)
+                i=i+1
             message += ";ACCMODEFEATURES=" + str(accModeFeatures)
             self.sock.send(message.encode())
             message = self.sock.recv()
@@ -124,11 +130,11 @@ class DeepNNCarController:
             print("SPEEDSENSOR: DISABLED")
             print("PATHTRACKER: DISABLED")
         if (self.cpuTrackingEnabled):
-            print("CPUTRACKER: Add Feature")
+            print("CPUTRACKER: %0.2f" %self.cpuUtil)
         else:
             print("CPUTRACKER: DISABLED")
         if (self.tempTrackingEnabled):
-            print("TEMPTRACKER: Add Feature")
+            print("TEMPTRACKER: %0.2f" %self.cpuUtil)
         else:
             print("TEMPTRACKER: DISABLED")
         print("\n")
@@ -192,7 +198,8 @@ class DeepNNCarController:
                 filename,filepath = self.handleDataCollection(numberOfTrials)
                 sendToGoogleDrive(filename,filepath)
                 print("Saved to googled drive.")
-            elif (self.speedSensorEnabled): 
+                continue
+            if (self.speedSensorEnabled): 
                 self.speed = float(self.messageDecoder.getSpeed())
                 if (self.pathTrackerEnabled):
                     x,y = self.messageDecoder.getPositionCoordinates()
@@ -200,7 +207,10 @@ class DeepNNCarController:
                     self.heading = round(float(self.messageDecoder.getHeading()),2)
                     self.lx.append(x)
                     self.ly.append(y)
-
+            if (self.tempTrackingEnabled):
+                self.temp = self.messageDecoder.getTemperature()
+            if (self.cpuTrackingEnabled):
+                self.cpuUtil = self.messageDecoder.getCPUUtilization()
             if (stopSignalSent):
                 stopped = True
             time.sleep(0.03)
@@ -279,7 +289,7 @@ class DeepNNCarController:
 
 
 if __name__=="__main__":
-    controller = DeepNNCarController(IP = "XXX.XXX.XXX.XXX",Port = "XXXX", maxForwardRange = 1)
+    controller = DeepNNCarController(IP = "10.66.170.71",Port = "5001", maxForwardRange = 1)
     config = controller.configure()
     controller.selectCapabilities(config[0],config[1],config[2],config[3],config[4],config[5],config[6],config[7])
     controller.start()
