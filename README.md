@@ -26,7 +26,6 @@ remote data collection mode, autonomous steering mode, and livestream mode; all 
 own unique capabilities and provide a networked thin client connection. DeepNNCar is written in Python
 and uses OpenCV, an open source image processing toolbox and TensorFlow, an open source machine
 learning toolbox, to implement the CNN and the safety protocols.
-![Controller](/Images/Controller.PNG)
 ## Hardware Architecture
 ![Circuit Schematic](/Images/CircuitSchematic.PNG)
 ## Software Architecture
