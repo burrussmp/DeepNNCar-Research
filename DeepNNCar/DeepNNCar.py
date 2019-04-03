@@ -53,6 +53,7 @@ class DeepNNCar:
         # get mode
         self.modeOfOperation = self.messageDecoder.getMode() # either AUTO,DATACOLLECT,LIVESTREAM, or NORMAL
         modeFeatures = self.messageDecoder.getOperationModeFeatures()
+        self.laneDetectionEnabled = self.offloadingTasksEnabled = self.blurrinessMeasurementEnabled = False
         if (self.modeOfOperation == "AUTO"):
             if (modeFeatures[0] == "True"):
                 self.laneDetectionEnabled = True
@@ -130,12 +131,15 @@ class DeepNNCar:
             # capture image and timestamp
             frame = self.camera.captureImage()
             frames.append(frame)
+            if (count % 5 == 0):
+                print(count)
             timestamp = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
             timestamps.append(timestamp)
             # get acceleration and steering values
             accelerations.append(str(self.acceleration))
             steerings.append(str(self.steering))
             count = count + 1
+        self.pwm.changeDutyCycle(15.0,15.0)
         print("Completed data collection of %d samples\n" %self.numberOfTrials)
         self.mutex.acquire()
         self.sock.recv() # ignore message

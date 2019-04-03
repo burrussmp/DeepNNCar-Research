@@ -134,7 +134,7 @@ class DeepNNCarController:
         else:
             print("CPUTRACKER: DISABLED")
         if (self.tempTrackingEnabled):
-            print("TEMPTRACKER: %0.2f" %self.cpuUtil)
+            print("TEMPTRACKER: %0.2f" %self.temp)
         else:
             print("TEMPTRACKER: DISABLED")
         print("\n")
@@ -160,8 +160,6 @@ class DeepNNCarController:
             frame = np.reshape(frame,(3,13200)) # maximum excel sheet is 16384 columns and 1,048,576 rows
             frame_as_list = frame.tolist()
             writer.writerows(frame_as_list)
-            cv2.imshow('Live Feed',frame)
-            cv2.waitKey(33)
             self.sock.send(message.encode())
             response = self.sock.recv()
             self.messageDecoder.decodeMessage(response.decode())
@@ -270,7 +268,7 @@ class DeepNNCarController:
     def configure(self):
         displayTitle()
         operationMode = selectOperationMode()
-        operationModeFeatues = None
+        operationModeFeatues = (None,)
         if (operationMode == "AUTO"):
             operationModeFeatues = configureAutonomousMode()
         elif (operationMode == "DATACOLLECTION"):
@@ -289,7 +287,7 @@ class DeepNNCarController:
 
 
 if __name__=="__main__":
-    controller = DeepNNCarController(IP = "10.66.170.71",Port = "5001", maxForwardRange = 1)
+    controller = DeepNNCarController(IP = "10.66.234.14",Port = "5001", maxForwardRange = 1)
     config = controller.configure()
     controller.selectCapabilities(config[0],config[1],config[2],config[3],config[4],config[5],config[6],config[7])
     controller.start()

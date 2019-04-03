@@ -10,13 +10,15 @@ import csv
 import DataSetLoader
 import model
 import sys
+import copy
+import random
+import glob
 
 best_train_loss = 0.0
 last_improvement = 0
 i=0
-full_data_training =  True
-batch_data_training = False
-batch_size = 500
+batch_data_training = True
+batch_size = 3000
 csvfile = open("model.csv", "w")
 #######Parameters########
 save_path = "./model"
@@ -29,8 +31,28 @@ model_load_file="test.ckpt"
 save_dir = os.path.abspath('model')
 ######################################
 
+def load_list_of_datasets(array_of_csv_paths):
+	images = []
+	outputs = []
+	for dataset in array_of_csv_paths:
+		inputs = DataSetLoader.load_training_images(dataset)
+		out= DataSetLoader.read_training_output_data(dataset)
+		images = images + inputs
+		outputs = outputs + out
+	print("loaded datset of %d inputs and outputs" %len(outputs))
+	return images,outputs
 
-def train(training_dataset,validation_dataset):
+def batch(images,outputs,batch_size):
+	n = len(images)
+	value = random.sample(range(0, n), batch_size)
+	batch_images = []
+	batch_outputs = []
+	for i in value:
+		batch_images.append(images[i])
+		batch_outputs.append(outputs[i])
+	return batch_images,batch_outputs
+
+def train(images_training,outputs_training,images_validation,outputs_validation):
 
 	#if not os.path.isdir(out_dir):
 	#   os.makedirs(out_dir)
@@ -63,31 +85,42 @@ def train(training_dataset,validation_dataset):
 		lossdata =[]
 		#Unshuffled Full data training and validation
 		validate = False
-		if(full_data_training == True):
+		print("Reloading input/outputs")
+		if((i+1) % 10)!=0:
+			print("...............training step {}...............".format(i+1))
+			#inputs = DataSetLoader.load_training_images(training_dataset)
+			#outputs= DataSetLoader.read_training_output_data(training_dataset)
 			
-			if((i+1) % 10)!=0:
-				print("...............training step {}...............".format(i+1))
-				inputs = DataSetLoader.load_training_images(training_dataset)
-				outputs= DataSetLoader.read_training_output_data(training_dataset)
+			# make deep copy of training inputs/outputs
+			inputs = copy.deepcopy(images_training)
+			outputs = copy.deepcopy(outputs_training)
 
 
-			if((i+1) % 10)==0:
-				print("...............validation step {}...............".format(i+1))
-				inputs1 = DataSetLoader.load_validation_images(validation_dataset)
-				outputs1 = DataSetLoader.read_validation_output_data(validation_dataset)
-				validate = True
+		if((i+1) % 10)==0:
+			print("...............validation step {}...............".format(i+1))
+			#inputs1 = DataSetLoader.load_validation_images(validation_dataset)
+			#outputs1 = DataSetLoader.read_validation_output_data(validation_dataset)
+
+			# made deeep copy of validation inputs/outputs
+			inputs1 = copy.deepcopy(images_validation)
+			outputs1 = copy.deepcopy(outputs_validation)
+			validate = True
 		#Shuffled batch data for training and validation
 		if(batch_data_training == True):
-
+			print("Batching size: %d" %batch_size)
 			if((i+1) % 10)!=0:
 				print("...............training step {}...............".format(i+1))
-				inputs,outputs = DataSetLoader.load_images_and_outputs_batch(training_dataset,batch_size)
+				#inputs,outputs = DataSetLoader.load_images_and_outputs_batch(training_dataset,batch_size)
 
+				# select random batch from images for training
+				inputs,outputs = batch(inputs,outputs,batch_size)
 
 			if((i+1) % 10)==0:
 				print("...............validation step {}...............".format(i+1))
-				inputs1,outputs1 = DataSetLoader.load_images_and_outputs_batch(validation_dataset,batch_size)
+				#inputs1,outputs1 = DataSetLoader.load_images_and_outputs_batch(validation_dataset,batch_size)
 				validate = True
+				inputs1,outputs1 = batch(inputs1,outputs1,batch_size)
+				# select random batch from images for validation
 		
        		 #Running the model with the data
 		if (not validate):
@@ -145,6 +178,17 @@ def train(training_dataset,validation_dataset):
 
 
 if __name__ == '__main__':
-	training_dataset = "path/to/training.csv"
-	validation_dataset = "path/to/validation.csv"
-	train(training_dataset,validation_dataset)
+	path = "C:\\Users\\Matthew Burruss\\Documents\\GitHub\DeepNNCar Public\\CNNTraining\\TF\\"
+	d1 = []
+	d1.append(path+"Data20190401042944500.csv")
+	#d1.append(path+"Data20190401041323132.csv")
+	#d1.append(path+"Data20190401035027367.csv")
+	#d1.append(path+"Data20190401035027367.csv")
+	#d1.append(path+"Data20190401032355775.csv")
+	print("loading training dataset")
+	images_training,outputs_training = load_list_of_datasets(d1)
+	# possible add validation dataset
+	print("loading validation dataset")
+	images_validation = copy.deepcopy(images_training)
+	outputs_validation = copy.deepcopy(outputs_training)
+	train(images_training,outputs_training,images_validation,outputs_validation)

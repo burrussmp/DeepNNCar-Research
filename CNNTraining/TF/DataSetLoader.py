@@ -40,6 +40,8 @@ def load_training_images(pathToFile):
             if ((rownum-1) %3 == 0):
                 img = np.asarray(list,dtype=np.uint8)
                 img = np.resize(img,(66,200,3))
+                #cv2.imshow('data',img)
+                #cv2.waitKey(1)
                 img = img / 255.
                 inputs.append(img)
                 list = []
@@ -63,6 +65,7 @@ def read_training_output_data(pathToFile):
             if (rownum == 1):
                 img_num = int(row[0])
                 rownum = rownum + 1
+                print("opened outputs for%d images" %img_num)
                 continue
             else:
                 list.append(row)
@@ -106,12 +109,11 @@ def load_images_and_outputs_batch(pathToFile,batch_size):
         batch_outputs.append(output[i])
     return batch_images,batch_outputs
 
-"""
-if __name__ == '__main__':
-    input = load_training_images(pathToFile="path/to/some/datafile/Data20190329003618207.csv")
-    load_validation_images_batch
-    output = read_validation_output_data(pathToFile="path/to/some/datafile/Data20190329003618207.csv)
-    #print(output)
+
+#if __name__ == '__main__':
+    #input = load_training_images(pathToFile="C:\Users\Matthew Burruss\Data20190401033407205.csv")
+    #load_validation_images_batch
+    #output = read_validation_output_data(pathToFile="C:\Users\Matthew Burruss\Data20190401033407205.csv")
+    #print(len(output))
     #load_validation_images()
     #read_validation_output_data()
-"""

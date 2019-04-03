@@ -13,7 +13,7 @@ import psutil
 class SpeedSensor:
     def __init__(self):
         self.gpioPinIRSensor = 21
-        self.diameterOfWheel = 80 #mm
+        self.diameterOfWheel = 73.44 #mm
         # init gpio pin for IR sensor
         GPIO.setmode(GPIO.BCM)
         GPIO.setwarnings(False)
