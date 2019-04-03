@@ -111,7 +111,7 @@ def load_images_and_outputs_batch(pathToFile,batch_size):
 
 
 #if __name__ == '__main__':
-    #input = load_training_images(pathToFile="C:\Users\Matthew Burruss\Data20190401033407205.csv")
+    #input = load_training_images(pathToFile='/home/scope/Burruss/DeepNNCar/DeepNNCar-Research/CNNTraining/TF/Data20190401032355775.csv')
     #load_validation_images_batch
     #output = read_validation_output_data(pathToFile="C:\Users\Matthew Burruss\Data20190401033407205.csv")
     #print(len(output))

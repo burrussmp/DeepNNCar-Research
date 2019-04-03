@@ -178,13 +178,13 @@ def train(images_training,outputs_training,images_validation,outputs_validation)
 
 
 if __name__ == '__main__':
-	path = "C:\\Users\\Matthew Burruss\\Documents\\GitHub\DeepNNCar Public\\CNNTraining\\TF\\"
+	path = '/home/scope/Burruss/DeepNNCar/DeepNNCar-Research/CNNTraining/TF/'
 	d1 = []
 	d1.append(path+"Data20190401042944500.csv")
-	#d1.append(path+"Data20190401041323132.csv")
-	#d1.append(path+"Data20190401035027367.csv")
-	#d1.append(path+"Data20190401035027367.csv")
-	#d1.append(path+"Data20190401032355775.csv")
+	d1.append(path+"Data20190401041323132.csv")
+	d1.append(path+"Data20190401035027367.csv")
+	d1.append(path+"Data20190401035027367.csv")
+	d1.append(path+"Data20190401032355775.csv")
 	print("loading training dataset")
 	images_training,outputs_training = load_list_of_datasets(d1)
 	# possible add validation dataset
