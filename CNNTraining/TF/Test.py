@@ -14,7 +14,7 @@ import tensorflow as tf
 import glob
 import csv
 
-save_dir = os.path.abspath('model')
+save_dir = os.path.abspath('model_500')
 
 csvfile = open("validation.csv", "w")
 
