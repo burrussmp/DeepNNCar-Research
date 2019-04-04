@@ -185,11 +185,12 @@ if __name__ == '__main__':
 	d1.append(path+"Data20190401035027367.csv")
 	d1.append(path+"Data20190401035027367.csv")
 	d1.append(path+"Data20190401032355775.csv") 
-    d1.append(path+"Data20190404051032143.csv")
-    d1.append(path+"Data20190404052240114.csv")
-    d1.append(path+"Data20190404052933445.csv")
-    d1.append(path+"Data20190404054246771.csv")
-    d1.append(path+"Data20190404054948189.csv")
+	d1.append(path+"Data20190404051032143.csv")
+	d1.append(path+"Data20190404052240114.csv")
+	d1.append(path+"Data20190404052933445.csv")
+	d1.append(path+"Data20190404054246771.csv")
+	d1.append(path+"Data20190404054948189.csv")
+	
     # total of 27k images
 	print("loading training dataset")
 	images_training,outputs_training = load_list_of_datasets(d1)
