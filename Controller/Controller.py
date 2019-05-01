@@ -32,6 +32,7 @@ class DeepNNCarController:
         self.maxForwardRange = maxForwardRange
         context = zmq.Context()
         print("Connecting to DeepNNCar...")
+        self.steering = 15
         self.sock = context.socket(zmq.REQ)
         self.sock.connect("tcp://%s:%s" %(IP,Port))
         self.deepNNCarIP = IP
@@ -84,8 +85,86 @@ class DeepNNCarController:
             #data = data.decode()
             nparr = np.fromstring(data, np.uint8)
             frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+            
+            #print(frame.shape)
+            frame_resized = cv2.resize(frame, (200, 66))
+            gray = cv2.cvtColor(frame_resized,cv2.COLOR_BGR2GRAY)
+            self.performLaneDetection(gray)
             cv2.imshow('Live Feed',frame)
             cv2.waitKey(33)
+        
+    
+    def performLaneDetection(self,image):
+        # mask out all but white
+        # filter noise from canny edge
+        #gauss_gray = cv2.GaussianBlur(image,(9,9),0)
+        #cv2.imshow('Blur',gauss_gray)
+        #mask_not_white = cv2.inRange(gauss_gray, 215, 255)
+        #mask_not_white = cv2.inRange(image, 0, 15)
+        image=cv2.bitwise_not(image)
+        #cv2.imshow('Invert',image)
+        #image = cv2.GaussianBlur(image,(9,9),0)
+        mask_not_white = cv2.inRange(image, 175, 255)
+        #cv2.imshow('Mask',mask_not_white)
+        # apply canny edge
+        low_threshold = 50
+        high_threshold = 125
+        canny_edges = cv2.Canny(mask_not_white,low_threshold,high_threshold)
+        #cv2.imshow('Mask White',canny_edges)
+        # mask region of interest 
+        mask = np.zeros((66,200), np.uint8)
+        pts = np.array([[0,30],[0,60],[60,60],[60,30]])
+        cv2.drawContours(mask, np.int32([pts]),0, 255, -1)
+        pts = np.array([[199,30],[199,60],[139,60],[139,30]])
+        cv2.drawContours(mask, np.int32([pts]),0, 255, -1)
+        # hough line transform
+        canny_edges = cv2.bitwise_or(canny_edges, canny_edges, mask=mask)
+        leftSide = canny_edges[30:60,0:60].copy()
+        cv2.imshow('Left',leftSide)
+        rightSide = canny_edges[30:60,139:199].copy()
+        cv2.imshow('Right',rightSide)
+        #skel = skeleton(canny_edges)
+        #left = np.where(leftSide == [255])
+        #right = np.where(rightSide == [255])
+        
+        linesLeft = cv2.HoughLines(leftSide,3,np.pi/180,23)
+        linesRight = cv2.HoughLines(rightSide,3,np.pi/180,23)
+        if (linesRight is not None and linesLeft is not None):
+            print("straight")
+            #return 15
+            #ldResult = 15
+        elif (linesRight is None and linesLeft is not None):
+            print('Turning Right')
+            #return 20
+            #self.ldResult =  20
+        elif (linesLeft is None and linesRight is not None):
+            print('Turning Left')
+            #return 10
+            #self.ldResult = 10
+        else:
+            print('Stop')
+            #return 15
+            #self.ldResult = 0
+        """
+        if (len(right[0]) != 0 and len(left[0]) != 0):
+            #print("straight")
+            self.steering =  15
+            #ldResult = 15
+        elif (len(right[0]) == 0 and len(left[0]) != 0):
+            #print('Turning Right')
+            self.steering = 20
+            #self.ldResult =  20
+        elif (len(left[0]) == 0 and len(right[0]) != 0):
+            #print('Turning Left')
+            self.steering = 10
+            #return 10
+            #self.ldResult = 10
+        else:
+            print('Stop')
+            self.steering = 15
+            #return 15
+            #self.ldResult = 0
+        """
     def selectCapabilities(self, operationMode,operationModeFeatures,accMode,accModeFeatures,tempEnabled,pathTrackingEnabled,speedSensorEnabled,cpuUtilEnabled):
         self.speedSensorEnabled = speedSensorEnabled # true or false
         self.pathTrackerEnabled = pathTrackingEnabled # true or false
@@ -180,6 +259,7 @@ class DeepNNCarController:
         stopSignalSent = False
         while not stopped:
             steering,acceleration = self.mousePosToDutyCycle()
+            #steering = self.steering
             if (not self.terminate):
                 message = "STEERING="+str(steering)+";ACCELERATION="+str(acceleration)
                 message += ";STOP=FALSE"
@@ -287,7 +367,7 @@ class DeepNNCarController:
 
 
 if __name__=="__main__":
-    controller = DeepNNCarController(IP = "10.66.234.14",Port = "5001", maxForwardRange = 1)
+    controller = DeepNNCarController(IP = "10.66.213.65",Port = "5001", maxForwardRange = 1)
     config = controller.configure()
     controller.selectCapabilities(config[0],config[1],config[2],config[3],config[4],config[5],config[6],config[7])
     controller.start()

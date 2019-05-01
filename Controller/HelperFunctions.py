@@ -1,7 +1,7 @@
 from pydrive.drive import GoogleDrive
 from pydrive.auth import GoogleAuth
 import os
-def sendToGoogleDrive(fileName,filePath,pathToClientSecrets="c:/Users/Matthew Burruss/Documents/Github/DeepNNCar V2/DeepNNCar/client_secrets.json"):
+def sendToGoogleDrive(fileName,filePath,pathToClientSecrets="c:/Users/Matthew Burruss/Documents/Github/DeepNNCar outdated/DeepNNCar/client_secrets.json"):
     gauth = GoogleAuth()
     gauth.LoadClientConfigFile(pathToClientSecrets)  # <-----
 
@@ -19,7 +19,6 @@ def sendToGoogleDrive(fileName,filePath,pathToClientSecrets="c:/Users/Matthew Bu
     print(filePath)
     #os.remove(filePath)
     #print("Dataset removed from local machine")
-
 def displayTitle():
     print("##############################################")
     print("                 DEEPNNCAR                    ")
