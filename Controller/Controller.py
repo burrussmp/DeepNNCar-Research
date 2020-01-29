@@ -10,7 +10,6 @@ import signal
 import sys
 import threading
 import time
-from ctypes import Structure, byref, c_long, windll
 from threading import Thread,Lock
 from HelperFunctions import sendToGoogleDrive,displayTitle,selectOperationMode,selectAccelerationProtocol,configureAutonomousMode,configureConstantDC,configureConstantDC,configureFeedback,configureDataCollection,configureCruiseControl
 #import psutil
@@ -22,11 +21,11 @@ from datetime import datetime
 from CommunicationProtocol import CommunicationProtocol
 import csv
 import os
-
-class POINT(Structure):
-    _fields_ = [("x", c_long), ("y", c_long)]
+from pynput import mouse
 
 class DeepNNCarController:
+    def on_move(self,x,y):
+        self.mouse_pos = { "x": x, "y": y}
     def __init__(self,IP,Port,maxForwardRange):
         self.idle = [15,15]
         self.maxForwardRange = maxForwardRange
@@ -37,9 +36,14 @@ class DeepNNCarController:
         self.sock.connect("tcp://%s:%s" %(IP,Port))
         self.deepNNCarIP = IP
         # initialize screen types
-        user32 = ctypes.windll.user32
-        self.maxXPos = float(user32.GetSystemMetrics(0))
-        self.maxYPos = float(user32.GetSystemMetrics(1))
+
+        listener = mouse.Listener(
+            on_move = self.on_move
+        )
+        self.mouse_pos = { "x": 0.0, "y": 0.0}
+        listener.start()
+        self.maxXPos = 1919
+        self.maxYPos = 1079
         self.minXPos = 0.0
         self.minYPos = 0.0
         # initialize helper classes
@@ -225,7 +229,7 @@ class DeepNNCarController:
         trialSteer = []
         time = datetime.utcnow().strftime('%Y%m%d%H%M%S%f')[:-3]
         fileName = "Data" + time + ".csv"
-        csvfile = open(fileName, "wb")
+        csvfile = open(fileName, "w")
         writer=csv.writer(csvfile)
         writer.writerow([numberOfTrials])
         for i in range(numberOfTrials):
@@ -293,17 +297,12 @@ class DeepNNCarController:
                 stopped = True
             time.sleep(0.03)
 
-    def queryMousePosition(self):
-        pt = POINT()
-        windll.user32.GetCursorPos(byref(pt))
-        return { "x": pt.x, "y": pt.y}
 
     def mousePosToDutyCycle(self):
-        pos = self.queryMousePosition()
         # flip y
-        pos['y'] = self.maxYPos - pos['y']
-        normX = (pos['x']-self.minXPos)/(self.maxXPos-self.minXPos)
-        normY = (pos['y'] - self.minYPos)/(self.maxYPos-self.minYPos)
+        y_flipped = self.maxYPos - self.mouse_pos['y']
+        normX = (self.mouse_pos['x']-self.minXPos)/(self.maxXPos-self.minXPos)
+        normY = (y_flipped - self.minYPos)/(self.maxYPos-self.minYPos)
         # denormalize to steering
         steering = round((20-10)*normX + 10,2)
         # set bounds
@@ -367,7 +366,7 @@ class DeepNNCarController:
 
 
 if __name__=="__main__":
-    controller = DeepNNCarController(IP = "10.66.213.65",Port = "5001", maxForwardRange = 1)
+    controller = DeepNNCarController(IP = "10.66.232.88",Port = "5001", maxForwardRange = 1)
     config = controller.configure()
     controller.selectCapabilities(config[0],config[1],config[2],config[3],config[4],config[5],config[6],config[7])
     controller.start()

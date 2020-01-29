@@ -1,7 +1,7 @@
 from pydrive.drive import GoogleDrive
 from pydrive.auth import GoogleAuth
 import os
-def sendToGoogleDrive(fileName,filePath,pathToClientSecrets="c:/Users/Matthew Burruss/Documents/Github/DeepNNCar outdated/DeepNNCar/client_secrets.json"):
+def sendToGoogleDrive(fileName,filePath,pathToClientSecrets="/home/burrussmp/Documents/DeepNNCar/credentials.json"):
     gauth = GoogleAuth()
     gauth.LoadClientConfigFile(pathToClientSecrets)  # <-----
 
@@ -9,7 +9,7 @@ def sendToGoogleDrive(fileName,filePath,pathToClientSecrets="c:/Users/Matthew Bu
 
     folder_id = '1OqZVOYfXlEPRKfL1Q_mPWAmEUBlzlt7C'
     file1 = drive.CreateFile({
-        'title': fileName,
+        'title': 'anomaly.csv',
         "mimeType": "text/csv",
         'parents': [{'id': folder_id}]
     })  # Create GoogleDriveFile instance with title 'Hello.txt'.
@@ -31,7 +31,7 @@ def selectOperationMode():
         print("B: LIVESTREAM Operation")
         print("C: DATACOLLECTION Operation")
         print("D: AUTONOMOUS Operation")
-        userInput = raw_input()
+        userInput = input()
         userInput = userInput.lower()
         selectedMode = True
         if (userInput == "a"):
@@ -48,7 +48,7 @@ def selectOperationMode():
     return operationMode
 
 def configureDataCollection():
-    trialNumber = raw_input("Enter the number of trials: ")
+    trialNumber = input("Enter the number of trials: ")
     return (trialNumber)
 
 def configureAutonomousMode():
@@ -62,7 +62,7 @@ def configureAutonomousMode():
         if not blurrinessmeasurement: print("C: Enable blurriness measurement")
         print("1: Enable all features")
         print("2: Finished")
-        userInput = raw_input()
+        userInput = input()
         userInput = userInput.lower()
         if (userInput == "a"):
             lanedetection = True
@@ -87,7 +87,7 @@ def selectAccelerationProtocol():
         print("A: USER Controlled")
         print("B: CRUISE Controlled")
         print("C: CONSTANT (duty cycle) controlled")
-        userInput = raw_input()
+        userInput = input()
         userInput = userInput.lower()
         selectedMode = True
         if (userInput == "a"):
@@ -102,10 +102,10 @@ def selectAccelerationProtocol():
     return accMode
 
 def configureCruiseControl():
-    return raw_input("Enter set speed: ")
+    return input("Enter set speed: ")
 
 def configureConstantDC():
-    return raw_input("Enter duty cycle: ")
+    return input("Enter duty cycle: ")
 
 def configureFeedback():
     finished = False
@@ -120,7 +120,7 @@ def configureFeedback():
         if not CPU: print("D: Enable CPU utilization feedback")
         print("1: Enable all features")
         print("2: Finished")
-        userInput = raw_input()
+        userInput = input()
         userInput = userInput.lower()
         if (userInput == "a"):
             temperature = True
