@@ -218,16 +218,16 @@ class DaveIIModel():
         predictions = self.predict(X)
         accuracy = np.sum(np.argmax(predictions,axis=1) == np.argmax(Y, axis=1)) / len(Y)
         print('The accuracy of the model: ', accuracy)
-        mse = mean_squared_error(np.argmax(Y, axis=1),np.argmax(predictions,axis=1))
-        print('MSE of model: ', mse)
+        #mse = mean_squared_error(np.argmax(Y, axis=1),np.argmax(predictions,axis=1))
+        #print('MSE of model: ', mse)
         print('Number of samples: ', len(Y))
     
     def evaluate_with_reject(self,X,Y):
         predictions = self.predict_with_reject(X)
         accuracy = np.sum(np.argmax(predictions,axis=1) == np.argmax(Y, axis=1)) / len(Y)
         print('The accuracy of the model: ', accuracy)
-        mse = mean_squared_error(np.argmax(Y, axis=1),np.argmax(predictions,axis=1))
-        print('MSE of model: ', mse)
+        #mse = mean_squared_error(np.argmax(Y, axis=1),np.argmax(predictions,axis=1))
+        #print('MSE of model: ', mse)
         print('Number of samples: ', len(Y))
     
     def predict_with_reject(self,X):
