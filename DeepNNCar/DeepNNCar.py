@@ -213,7 +213,7 @@ class DeepNNCar:
                 if (prediction==10):
                     print('Rejecting...')
                     acc = 15
-                    steering = 15
+                    steer = 15
                 else:
                     steer = steering[prediction][0]
             steer = float("{0:.2f}".format(steer))
