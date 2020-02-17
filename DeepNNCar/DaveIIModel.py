@@ -13,7 +13,6 @@ import math
 from keras.engine.topology import Layer
 from keras.initializers import RandomUniform, Initializer, Constant
 from keras.initializers import Initializer
-from sklearn.cluster import KMeans
 import tensorflow as tf
 
 RBF_LAMBDA = 0.5
