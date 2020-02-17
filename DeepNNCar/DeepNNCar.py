@@ -211,7 +211,7 @@ class DeepNNCar:
             else:
                 y_hat = model.predict_with_reject(np.expand_dims(frame_normalized,axis=0))
                 prediction = np.argmax(y_hat,axis=1)
-                if (prediction==10 and y_hat[10]>0.5):
+                if (prediction==10 and y_hat[0,10]>0.5):
                     print('Rejecting...')
                     acc = 15
                     steer = 15
