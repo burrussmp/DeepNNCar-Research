@@ -23,7 +23,7 @@ from SafetyManager import SafetyManager
 from PluggableFeatures import PathTracker,PID
 import os
 import tensorflow as tf
-
+from DaveIIModel import *
 class DeepNNCar:
     def __init__(self,port):
         context = zmq.Context()
@@ -185,15 +185,12 @@ class DeepNNCar:
 
     def auto(self):
         print("importing model...")
-        import model
         print("model imported....")
-        self.safetyManager = SafetyManager(self.laneDetectionEnabled,self.blurrinessMeasurementEnabled,self.offloadingTasksEnabled)
-        sess = tf.InteractiveSession()
-        saver = tf.train.Saver()
-        model_name = 'test.ckpt'
-        save_dir = os.path.abspath('/media/pi/USB DRIVE/trial1610r')
-        model_path = os.path.join(save_dir, model_name)
-        saver.restore(sess, model_path)
+        baseDir = '/media/pi/USB DRIVE/'
+        RBF = False
+        model = DaveIIModel(RBF=RBF)
+        model.load(weights=os.path.join(baseDir,'softmax_clean.h5'))
+        steering = np.linspace(10,20,10)
         while 1:
             ########################### Receive message
             message = self.sock.recv()
@@ -207,10 +204,18 @@ class DeepNNCar:
             frame = self.camera.captureImage()
             frame_resized = cv2.resize(frame, (200, 66))
             ########################## start safety manager thread
-            ldResult, bmResult = self.safetyManager.runImageAnalysis(frame_resized.copy(),self.temp)
             frame_normalized = frame_resized / 255.
-            steer_normalized = model.y.eval(feed_dict={model.x: [frame_normalized]})[0][0]
-            steer = steer_normalized*10+10 # range of 10-20
+            if (not RBF):
+                prediction = np.argmax(model.predict(np.expand_dims(frame_normalized,axis=0)),axis=1)
+                steer = steering[prediction][0]
+            else:
+                prediction = np.argmax(model.predict_with_reject(np.expand_dims(frame_normalized,axis=0)),axis=1)
+                if (prediction[0]==10):
+                    print('Rejecting...')
+                    acc = 15
+                    steering = 15
+                else:
+                    steer = steering[prediction][0]
             steer = float("{0:.2f}".format(steer))
             ########################### Set Steering and accelerations
             self.pwm.changeDutyCycle(acc,steer)
@@ -242,6 +247,66 @@ class DeepNNCar:
                 return
             #deepNNCar.updateDeepNNCar()
         print("Add later")
+
+    # def auto(self):
+    #     print("importing model...")
+    #     import model
+    #     print("model imported....")
+    #     self.safetyManager = SafetyManager(self.laneDetectionEnabled,self.blurrinessMeasurementEnabled,self.offloadingTasksEnabled)
+    #     sess = tf.InteractiveSession()
+    #     saver = tf.train.Saver()
+    #     model_name = 'test.ckpt'
+    #     save_dir = os.path.abspath('/media/pi/USB DRIVE/trial1610r')
+    #     model_path = os.path.join(save_dir, model_name)
+    #     saver.restore(sess, model_path)
+    #     while 1:
+    #         ########################### Receive message
+    #         message = self.sock.recv()
+    #         self.messageDecoder.decodeMessage(message.decode())
+    #         acc,steer = self.messageDecoder.getControl()
+    #         if (self.accelerationMode == "CRUISE"):
+    #             acc = self.PID_Controller.getAcceleration()
+    #         elif (self.accelerationMode == "CONSTANT"):
+    #             acc = self.acceleration
+    #         ########################### Take image
+    #         frame = self.camera.captureImage()
+    #         frame_resized = cv2.resize(frame, (200, 66))
+    #         ########################## start safety manager thread
+    #         ldResult, bmResult = self.safetyManager.runImageAnalysis(frame_resized.copy(),self.temp)
+    #         frame_normalized = frame_resized / 255.
+    #         steer_normalized = model.y.eval(feed_dict={model.x: [frame_normalized]})[0][0]
+    #         steer = steer_normalized*10+10 # range of 10-20
+    #         steer = float("{0:.2f}".format(steer))
+    #         ########################### Set Steering and accelerations
+    #         self.pwm.changeDutyCycle(acc,steer)
+    #         self.steering = steer
+    #         self.acceleration = acc
+    #         ############################ respond to client
+    #         message = "STATUS=GOOD"
+    #         if (self.pathTrackerEnabled):
+    #             x,y,displacement,heading = self.pathTracker.addTheta(steer)
+    #             message += ";XCOORD=" + str(x)
+    #             message += ";YCOORD=" + str(y)
+    #             message += ";DISPLACEMENT=" + str(displacement)
+    #             message += ";HEADING=" + str(heading)
+    #         if (self.CPUTrackerEnabled):
+    #             message += ";CPU=" + str(self.cpuUsage)
+    #         if (self.temperatureTrackerEnabled or self.offloadingTasksEnabled):
+    #             message += ";TEMP=" + str(self.temp)
+    #         # send response
+    #         if (self.speedSensorEnabled):
+    #             message += ";SPEED=" + str(self.DeepNNCarspeed)
+    #         # append steering and acceleration duty cycles to message
+    #         message += ";ACC=" + str(self.acceleration)
+    #         message += ";STEER=" + str(self.steering)
+    #         self.sock.send(message.encode())
+    #         if (self.messageDecoder.shouldStop()):
+    #             print("Stopping DeepNNCar")
+    #             self.pwm.changeDutyCycle(15,15)
+    #             self.terminateMainThread = True
+    #             return
+    #         #deepNNCar.updateDeepNNCar()
+    #     print("Add later")
 
     def liveStream(self):
         port= "5002"
