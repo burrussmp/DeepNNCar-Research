@@ -187,9 +187,9 @@ class DeepNNCar:
         print("importing model...")
         print("model imported....")
         baseDir = '/media/pi/USB DRIVE/'
-        RBF = False
+        RBF = True
         model = DaveIIModel(RBF=RBF)
-        model.load(weights=os.path.join(baseDir,'softmax_clean.h5'))
+        model.load(weights=os.path.join(baseDir,'anomaly_clean.h5'))
         steering = np.linspace(10,20,10)
         while 1:
             ########################### Receive message
@@ -210,7 +210,7 @@ class DeepNNCar:
                 steer = steering[prediction][0]
             else:
                 prediction = np.argmax(model.predict_with_reject(np.expand_dims(frame_normalized,axis=0)),axis=1)
-                if (prediction[0]==10):
+                if (prediction==10):
                     print('Rejecting...')
                     acc = 15
                     steering = 15
