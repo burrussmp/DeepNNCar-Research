@@ -7,7 +7,6 @@ from keras.layers import Conv2D, MaxPooling2D,Input,AveragePooling2D,InputLayer,
 from keras.models import Sequential
 import os
 import cv2
-from .Losses import RBF_Soft_Loss,RBF_Loss,DistanceMetric,RBF_LAMBDA
 from keras.callbacks import ModelCheckpoint, LearningRateScheduler, TensorBoard, EarlyStopping, History
 import math
 from sklearn.metrics import mean_squared_error
@@ -78,7 +77,7 @@ def DistanceMetric(y_true,y_pred):
     s = tf.reduce_sum(tf.cast(e, tf.float32))
     n = tf.cast(K.shape(y_true)[0],tf.float32)
     return s/n
-    
+
 class RBFLayer(Layer):
     def __init__(self, units, gamma, **kwargs):
         super(RBFLayer, self).__init__(**kwargs)
