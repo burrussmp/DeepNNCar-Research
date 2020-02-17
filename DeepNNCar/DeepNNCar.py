@@ -218,6 +218,8 @@ class DeepNNCar:
                     steer = 15
                 else:
                     prediction = np.argmax(y_hat[0,0:10])
+                    print(prediction)
+                    print(steering)
                     steer = steering[prediction][0]
             steer = float("{0:.2f}".format(steer))
             ########################### Set Steering and accelerations
