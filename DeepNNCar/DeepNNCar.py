@@ -211,14 +211,13 @@ class DeepNNCar:
             else:
                 y_hat = model.predict_with_reject(np.expand_dims(frame_normalized,axis=0))
                 prediction = np.argmax(y_hat,axis=1)
-                print(y_hat[0,10])
-                if (prediction==10):
+                if (prediction==10 and y_hat[0,10]>0.4):
                     print('Rejecting...')
                     acc = 15
                     steer = 15
                 else:
-                    #prediction = np.argmax(y_hat[0,0:10])
-                    steer = steering[prediction][0]
+                    prediction = np.argmax(y_hat[0,0:10])
+                    steer = steering[prediction]
             steer = float("{0:.2f}".format(steer))
             ########################### Set Steering and accelerations
             self.pwm.changeDutyCycle(acc,steer)
