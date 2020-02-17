@@ -9,7 +9,7 @@ import os
 import cv2
 from keras.callbacks import ModelCheckpoint, LearningRateScheduler, TensorBoard, EarlyStopping, History
 import math
-from sklearn.metrics import mean_squared_error
+#from sklearn.metrics import mean_squared_error
 from keras.engine.topology import Layer
 from keras.initializers import RandomUniform, Initializer, Constant
 from keras.initializers import Initializer
