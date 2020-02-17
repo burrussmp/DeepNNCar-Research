@@ -191,6 +191,7 @@ class DeepNNCar:
         model = DaveIIModel(RBF=RBF)
         model.load(weights=os.path.join(baseDir,'anomaly_clean.h5'))
         steering = np.linspace(10,20,10)
+        steer_prev = 15
         while 1:
             ########################### Receive message
             message = self.sock.recv()
@@ -211,13 +212,14 @@ class DeepNNCar:
             else:
                 y_hat = model.predict_with_reject(np.expand_dims(frame_normalized,axis=0))
                 prediction = np.argmax(y_hat,axis=1)
-                if (prediction==10 and y_hat[0,10]>0.4):
+                if (prediction==10 and y_hat[0,10]>0.7):
                     print('Rejecting...')
                     acc = 15
-                    steer = 15
+                    steer = steer_prev
                 else:
                     prediction = np.argmax(y_hat[0,0:10])
                     steer = steering[prediction]
+                    steer_prev = steer
             steer = float("{0:.2f}".format(steer))
             ########################### Set Steering and accelerations
             self.pwm.changeDutyCycle(acc,steer)
